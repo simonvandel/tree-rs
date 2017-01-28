@@ -116,6 +116,24 @@ fn is_hidden(file_name: &str) -> bool {
     file_name != "." && file_name != ".." && file_name.starts_with(".")
 }
 
+fn print_symlink_path(file_name: &str,
+                      levels: &mut Vec<bool>,
+                      t: &mut Box<term::StdoutTerminal>,
+                      config: &Config,
+                      link_path: std::path::PathBuf,
+                      is_dir: bool)
+                      -> io::Result<()> {
+    write!(t, "{}", &line_prefix(levels))?;
+    write_color(t, config, color::BRIGHT_CYAN, file_name)?;
+    write!(t, " -> ")?;
+    let link_path = format!("{}\n", link_path.display());
+    if is_dir {
+        write_color(t, config, color::BRIGHT_BLUE, &link_path)
+    } else {
+        write!(t, "{}", link_path)
+    }
+}
+
 fn iterate_folders(path: &Path,
                    levels: &mut Vec<bool>,
                    t: &mut Box<term::StdoutTerminal>,
@@ -129,16 +147,7 @@ fn iterate_folders(path: &Path,
     let is_dir = path.is_dir();
 
     if let Ok(link_path) = fs::read_link(path) {
-        write!(t, "{}", &line_prefix(levels))?;
-        write_color(t, config, color::BRIGHT_CYAN, file_name)?;
-        write!(t, " -> ")?;
-        let link_path = format!("{}\n", link_path.display());
-        if is_dir {
-            write_color(t, config, color::BRIGHT_BLUE, &link_path)?;
-        } else {
-            write!(t, "{}", link_path)?;
-        }
-
+        print_symlink_path(file_name, levels, t, config, link_path, is_dir)?;
         return Ok(());
     }
 
